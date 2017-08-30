@@ -18,6 +18,7 @@ void drawDot(DOT* dot, int flag);
 void generateFood(DOT* dot, DOT* food);
 void addToEnd(DOT* dot, int last);
 void delay(int milliseconds, int* last);
+void initSnake(DOT* segs, int len, int start_X, int start_Y);
 
 int main()
 {
@@ -26,16 +27,11 @@ int main()
 	DOT* head = segs;
 	DOT food;
 
-	head->x_pos = 40;
-	head->y_pos = 10;
-	segs[1].x_pos = 40;
-	segs[1].y_pos = 11;
-	segs[2].x_pos = 40;
-	segs[2].y_pos = 12;
-	segs[3].x_pos = 40;
-	segs[3].y_pos = 13;
-	segs[4].x_pos = 40;
-	segs[4].y_pos = 14;
+	int start_X, start_Y;
+	start_X = 40;
+	start_Y = 10;
+
+	initSnake(segs, len, start_X, start_Y);
 
 	initscr();			/* Start curses mode 		  */
 	cbreak();
@@ -205,4 +201,15 @@ void delay(int milliseconds, int* last)
 				int cg = getch();
 				if(cg != ERR){*last = cg; }
 			}
+}
+
+void initSnake(DOT* segs, int len, int start_X, int start_Y){
+	segs->x_pos = start_X;
+	segs->y_pos = start_Y;
+	segs++;
+	for (int i = 1; i<= len; i++){
+		segs->x_pos = start_X;
+		segs->y_pos = start_Y + i;
+		segs++;
+	}
 }
