@@ -19,6 +19,8 @@ void generateFood(DOT* dot, DOT* food);
 void addToEnd(DOT* dot, int last);
 void delay(int milliseconds, int* last);
 void initSnake(DOT* segs, int len, int start_X, int start_Y);
+int checkLoss(DOT* dot);
+void animateLoss(DOT* dot);
 
 int main()
 {
@@ -56,7 +58,7 @@ int main()
 		switch(ch)
 		{
 			case KEY_LEFT :
-				if(head->x_pos > X_START + 1 && last != KEY_RIGHT)
+				if(/*head->x_pos > X_START + 1 &&*/ last != KEY_RIGHT)
 				{
 				drawDot(head, 0);
 				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
@@ -66,7 +68,7 @@ int main()
 				}
 				break;
 			case KEY_RIGHT :
-				if(head->x_pos < X_START + SCREEN_WIDTH && last != KEY_LEFT)
+				if(/*head->x_pos < X_START + SCREEN_WIDTH &&*/ last != KEY_LEFT)
 				{
 				drawDot(head, 0);
 				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
@@ -76,7 +78,7 @@ int main()
 				}
 				break;
 			case KEY_UP :
-				if(head->y_pos > Y_START + 1 && last != KEY_DOWN)
+				if(/*head->y_pos > Y_START + 1 &&*/ last != KEY_DOWN)
 				{
 				drawDot(head, 0);
 				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
@@ -86,7 +88,7 @@ int main()
 				}
 				break;
 		  case KEY_DOWN :
-				if(head->y_pos < Y_START + SCREEN_HEIGHT && last != KEY_UP)
+				if(/*head->y_pos < Y_START + SCREEN_HEIGHT &&*/ last != KEY_UP)
 				{
 				drawDot(head, 0);
 				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
@@ -97,18 +99,54 @@ int main()
 				break;
 			}
 
+			if (checkLoss(head)) {refresh(); animateLoss(head); break;}
+
 			if (food.x_pos == head->x_pos && food.y_pos == head->y_pos){
 				generateFood(head, &food);
 				addToEnd(head, last);
 				drawDot(head, 1);
 			}
-			delay(250, &last);
+			delay(100, &last);
 
 	}
-	getch();			/* Wait for user input */
 	endwin();			/* End curses mode		  */
 
 	return 0;
+}
+
+void animateLoss(DOT* dot){
+	delay(500, NULL);
+	for (int i = len; i >= 1; i--){
+		mvaddch(dot[i].y_pos, dot[i].x_pos, ' ');
+		refresh();
+		delay(50, NULL);
+	}
+	int i = 0;
+	while(i < 3)
+	{	mvaddch(dot->y_pos, dot->x_pos, ' ');
+		refresh();
+		delay(100, NULL);
+		mvaddch(dot->y_pos, dot->x_pos, 'O');
+		refresh();
+		delay(100, NULL);
+		i++;
+	}
+}
+
+int checkLoss(DOT* dot){
+
+	int check = 0;
+	if(dot->y_pos == Y_START + SCREEN_HEIGHT + 1 || dot->x_pos == X_START || dot->x_pos == X_START + SCREEN_WIDTH + 1 || dot->y_pos == Y_START) {
+			 check = 1;
+	} for (int i = 1; i <= len; i++){
+		if (dot->x_pos == dot[i].x_pos && dot->y_pos == dot[i].y_pos) {
+			check = 1;
+			break;
+		}
+	}
+
+	if (check) {mvprintw(20, 40, "You lose!\n"); }
+	return check;
 }
 
 void addToEnd(DOT* dot, int last){
@@ -151,8 +189,8 @@ void generateFood(DOT* dot, DOT* food){
 	int x_pos, y_pos, check;
 	do {
 		check = 0;
-		x_pos = rand() % SCREEN_WIDTH + X_START;
-		y_pos = rand() % SCREEN_HEIGHT + Y_START;
+		x_pos = rand() % (SCREEN_WIDTH - 1) + X_START + 1;
+		y_pos = rand() % (SCREEN_HEIGHT - 1) + Y_START + 1;
 		//x_pos = 20;
 		//y_pos = 20;
 		for (int i = 0; i <= len; i++){
@@ -198,8 +236,10 @@ void delay(int milliseconds, int* last)
     now = then = clock();
     while( (now-then) < pause ) {
         now = clock();
-				int cg = getch();
-				if(cg != ERR){*last = cg; }
+				if (last != NULL){
+					int cg = getch();
+					if(cg != ERR){ *last = cg; }
+				}
 			}
 }
 
