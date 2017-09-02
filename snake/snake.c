@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SCREEN_WIDTH 70
-#define SCREEN_HEIGHT 30
-#define Y_START 2
-#define X_START 10
+#define SCREEN_WIDTH 75
+#define SCREEN_HEIGHT 22
+#define Y_START 0
+#define X_START 2
 
 int len = 4;
 
@@ -21,6 +21,8 @@ void delay(int milliseconds, int* last);
 void initSnake(DOT* segs, int len, int start_X, int start_Y);
 int checkLoss(DOT* dot);
 void animateLoss(DOT* dot);
+void mainMenu();
+void clearScreen(int startX, int startY, int width, int height);
 
 int main()
 {
@@ -37,11 +39,16 @@ int main()
 
 	initscr();			/* Start curses mode 		  */
 	cbreak();
+	curs_set(0);
 	keypad(stdscr, TRUE);
 	noecho();
-	nodelay(stdscr, TRUE);
 
 	drawBoard();
+	refresh();
+	mainMenu();
+	clearScreen(30, 6, 15, 20);
+
+	nodelay(stdscr, TRUE);
 	drawDot(segs, 1);
 	generateFood(head, &food);
 
@@ -145,7 +152,7 @@ int checkLoss(DOT* dot){
 		}
 	}
 
-	if (check) {mvprintw(20, 40, "You lose!\n"); }
+
 	return check;
 }
 
@@ -252,4 +259,43 @@ void initSnake(DOT* segs, int len, int start_X, int start_Y){
 		segs->y_pos = start_Y + i;
 		segs++;
 	}
+
 }
+
+void clearScreen(int startX, int startY, int width, int height){
+	 for (int i = startY; i<startY+width; i++){
+		 for (int j = startX; j<startX+height; j++){
+			 mvaddch(i, j, ' ');
+		 }
+	 }
+	 refresh();
+
+}
+ void mainMenu()
+ {
+	 	mvprintw(6, 30, "SNAKE!");
+		mvprintw(8, 30, "by Remy Kaldawy");
+		mvprintw(12, 35, "Play");
+		mvprintw(14, 35, "Options");
+		mvprintw(16, 35, "High Scores");
+
+		int play, pos, key, y_pos;
+		play = 1;
+		pos = 1;
+
+		while(play){
+			y_pos = 12 + (2 * pos);
+			mvaddch(y_pos, 30, '>');
+			key = getch();
+			if (key == KEY_RIGHT)
+				play = 0;
+			else if (key == KEY_UP && pos > 0) {
+				mvaddch(y_pos, 30, ' ');
+				pos--;
+			} else if (key == KEY_DOWN && pos < 2) {
+				mvaddch(y_pos, 30, ' ');
+				pos++;
+			}
+		}
+
+ }
