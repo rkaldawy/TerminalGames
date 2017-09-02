@@ -17,7 +17,7 @@ void drawBoard();
 void drawDot(DOT* dot, int flag);
 void generateFood(DOT* dot, DOT* food);
 void addToEnd(DOT* dot, int last);
-void delay(int milliseconds, int* last);
+void delay(int milliseconds, int* last, int orig);
 void initSnake(DOT* segs, int len, int start_X, int start_Y);
 int checkLoss(DOT* dot);
 void animateLoss(DOT* dot);
@@ -55,12 +55,13 @@ int main()
 
 	refresh();			/* Print it on to the real screen */
 
-	int ch, last;
+	int ch, last, orig;
 	last = KEY_UP;
 
 	while(1){
 		ch = getch();
 		if (ch == ERR){ ch = last;}
+		orig = last;
 
 		switch(ch)
 		{
@@ -113,7 +114,7 @@ int main()
 				addToEnd(head, last);
 				drawDot(head, 1);
 			}
-			delay(100, &last);
+			delay(100, &last, orig);
 
 	}
 	endwin();			/* End curses mode		  */
@@ -122,20 +123,20 @@ int main()
 }
 
 void animateLoss(DOT* dot){
-	delay(500, NULL);
+	delay(500, NULL, 0);
 	for (int i = len; i >= 1; i--){
 		mvaddch(dot[i].y_pos, dot[i].x_pos, ' ');
 		refresh();
-		delay(50, NULL);
+		delay(50, NULL, 0);
 	}
 	int i = 0;
 	while(i < 3)
 	{	mvaddch(dot->y_pos, dot->x_pos, ' ');
 		refresh();
-		delay(100, NULL);
+		delay(100, NULL, 0);
 		mvaddch(dot->y_pos, dot->x_pos, 'O');
 		refresh();
-		delay(100, NULL);
+		delay(100, NULL, 0);
 		i++;
 	}
 }
@@ -234,10 +235,11 @@ void drawBoard(){
 	mvvline(Y_START+1, X_START+SCREEN_WIDTH+1, '|', SCREEN_HEIGHT);
 }
 
-void delay(int milliseconds, int* last)
+void delay(int milliseconds, int* last, int orig)
 {
     long pause;
     clock_t now,then;
+		int cL, cR, cD, cU;
 
     pause = milliseconds*(CLOCKS_PER_SEC/1000);
     now = then = clock();
@@ -245,7 +247,13 @@ void delay(int milliseconds, int* last)
         now = clock();
 				if (last != NULL){
 					int cg = getch();
-					if(cg != ERR){ *last = cg; }
+					if(cg != ERR){
+						cL = orig != KEY_RIGHT && cg == KEY_LEFT;
+						cR = orig != KEY_LEFT && cg == KEY_RIGHT;
+						cU = orig != KEY_DOWN && cg == KEY_UP;
+						cD = orig != KEY_UP && cg == KEY_DOWN;
+						if (cL || cR || cU || cD){ *last = cg; }
+					}
 				}
 			}
 }
