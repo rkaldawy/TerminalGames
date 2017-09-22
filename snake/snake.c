@@ -1,11 +1,13 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 
 #define SCREEN_WIDTH 75
 #define SCREEN_HEIGHT 22
 #define Y_START 0
 #define X_START 2
+#define HIGH_SCORE_LEN 15
 
 int len = 4;
 
@@ -21,8 +23,9 @@ void delay(int milliseconds, int* last, int orig);
 void initSnake(DOT* segs, int len, int start_X, int start_Y);
 int checkLoss(DOT* dot);
 void animateLoss(DOT* dot);
-void mainMenu();
+int mainMenu();
 void clearScreen(int startX, int startY, int width, int height);
+void clearBoard();
 
 int main()
 {
@@ -35,9 +38,13 @@ int main()
 	start_X = 40;
 	start_Y = 10;
 
+	FILE* hs;
+	FILE* hs_tmp;
+	hs = fopen("high_scores.txt", "r+");
+
 	initSnake(segs, len, start_X, start_Y);
 
-	initscr();			/* Start curses mode 		  */
+	initscr();
 	cbreak();
 	curs_set(0);
 	keypad(stdscr, TRUE);
@@ -45,78 +52,104 @@ int main()
 
 	drawBoard();
 	refresh();
-	mainMenu();
-	clearScreen(30, 6, 15, 20);
 
-	nodelay(stdscr, TRUE);
-	drawDot(segs, 1);
-	generateFood(head, &food);
+	int quit = 0;
 
-
-	refresh();			/* Print it on to the real screen */
-
-	int ch, last, orig;
-	last = KEY_UP;
-
-	while(1){
-		ch = getch();
-		if (ch == ERR){ ch = last;}
-		orig = last;
-
-		switch(ch)
+	while(!quit){
+		switch(mainMenu())
 		{
-			case KEY_LEFT :
-				if(/*head->x_pos > X_START + 1 &&*/ last != KEY_RIGHT)
-				{
-				drawDot(head, 0);
-				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
-				--head->x_pos;
-				drawDot(head, 1);
-				last = ch;
-				}
-				break;
-			case KEY_RIGHT :
-				if(/*head->x_pos < X_START + SCREEN_WIDTH &&*/ last != KEY_LEFT)
-				{
-				drawDot(head, 0);
-				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
-				++head->x_pos;
-				drawDot(head, 1);
-				last = ch;
-				}
-				break;
-			case KEY_UP :
-				if(/*head->y_pos > Y_START + 1 &&*/ last != KEY_DOWN)
-				{
-				drawDot(head, 0);
-				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
-				--head->y_pos;
-				drawDot(head, 1);
-				last = ch;
-				}
-				break;
-		  case KEY_DOWN :
-				if(/*head->y_pos < Y_START + SCREEN_HEIGHT &&*/ last != KEY_UP)
-				{
-				drawDot(head, 0);
-				for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
-				++head->y_pos;
-				drawDot(head, 1);
-				last = ch;
-				}
-				break;
-			}
-
-			if (checkLoss(head)) {refresh(); animateLoss(head); break;}
-
-			if (food.x_pos == head->x_pos && food.y_pos == head->y_pos){
+				case(0):
+				clearBoard();
+				nodelay(stdscr, TRUE);
+				initSnake(segs, len, start_X, start_Y);
+				drawDot(segs, 1);
 				generateFood(head, &food);
-				addToEnd(head, last);
-				drawDot(head, 1);
-			}
-			delay(100, &last, orig);
+				refresh();			/* Print it on to the real screen */
 
+				int ch, last, orig;
+				last = KEY_UP;
+
+				while(1){
+					ch = getch();
+					if (ch == ERR){ ch = last;}
+					orig = last;
+
+					switch(ch)
+					{
+						case KEY_LEFT :
+							if(/*head->x_pos > X_START + 1 &&*/ last != KEY_RIGHT)
+							{
+							drawDot(head, 0);
+							for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
+							--head->x_pos;
+							drawDot(head, 1);
+							last = ch;
+							}
+							break;
+						case KEY_RIGHT :
+							if(/*head->x_pos < X_START + SCREEN_WIDTH &&*/ last != KEY_LEFT)
+							{
+							drawDot(head, 0);
+							for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
+							++head->x_pos;
+							drawDot(head, 1);
+							last = ch;
+							}
+							break;
+						case KEY_UP :
+							if(/*head->y_pos > Y_START + 1 &&*/ last != KEY_DOWN)
+							{
+							drawDot(head, 0);
+							for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
+							--head->y_pos;
+							drawDot(head, 1);
+							last = ch;
+							}
+							break;
+					  case KEY_DOWN :
+							if(/*head->y_pos < Y_START + SCREEN_HEIGHT &&*/ last != KEY_UP)
+							{
+							drawDot(head, 0);
+							for(int i = len; i >= 1; i--) { segs[i] = segs[i-1]; }
+							++head->y_pos;
+							drawDot(head, 1);
+							last = ch;
+							}
+							break;
+						}
+
+						if (checkLoss(head)) {refresh(); animateLoss(head); break;}
+
+						if (food.x_pos == head->x_pos && food.y_pos == head->y_pos){
+							generateFood(head, &food);
+							addToEnd(head, last);
+							drawDot(head, 1);
+						}
+						delay(100, &last, orig);
+				}
+
+				break;
+				case(1):
+
+				hs = fopen("high_scores.txt", "r+");
+				clearBoard();
+				char buff [HIGH_SCORE_LEN + 1];
+				int y_pos = 6;
+				while(fgets(buff, HIGH_SCORE_LEN, hs) != NULL){
+					mvprintw(y_pos, 25, buff);
+					y_pos += 2;
+				}
+				while(getch() != 10){}
+				clearBoard();
+				refresh();
+
+				break;
+				case(2):
+					quit = 1;
+				break;
+		}
 	}
+
 	endwin();			/* End curses mode		  */
 
 	return 0;
@@ -164,15 +197,19 @@ void addToEnd(DOT* dot, int last){
 				case(KEY_LEFT):
 					dot[len+1].x_pos = dot[len].x_pos + 1;
 					dot[len+1].y_pos = dot[len].y_pos;
+					break;
 				case(KEY_RIGHT):
 					dot[len+1].x_pos = dot[len].x_pos - 1;
 					dot[len+1].y_pos = dot[len].y_pos;
+					break;
 				case(KEY_UP):
 					dot[len+1].x_pos = dot[len].x_pos;
 					dot[len+1].y_pos = dot[len].y_pos + 1;
+					break;
 				case(KEY_DOWN):
 					dot[len+1].x_pos = dot[len].x_pos ;
 					dot[len+1].y_pos = dot[len].y_pos - 1;
+					break;
 		}
 	} else {
 		if(dot[len].x_pos == dot[len-1].x_pos + 1) {
@@ -270,32 +307,40 @@ void initSnake(DOT* segs, int len, int start_X, int start_Y){
 
 }
 
+void clearBoard(){
+	clearScreen(X_START + 1, Y_START + 1, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 void clearScreen(int startX, int startY, int width, int height){
-	 for (int i = startY; i<startY+width; i++){
-		 for (int j = startX; j<startX+height; j++){
+	 for (int i = startY; i<startY+height; i++){
+		 for (int j = startX; j<startX+width; j++){
 			 mvaddch(i, j, ' ');
 		 }
 	 }
 	 refresh();
 
 }
- void mainMenu()
+
+
+ int mainMenu()
  {
+	 clearBoard();
+	 drawBoard();
 	 	mvprintw(6, 30, "SNAKE!");
 		mvprintw(8, 30, "by Remy Kaldawy");
 		mvprintw(12, 35, "Play");
-		mvprintw(14, 35, "Options");
-		mvprintw(16, 35, "High Scores");
+		mvprintw(14, 35, "High Scores");
+		mvprintw(16, 35, "Exit");
 
 		int play, pos, key, y_pos;
 		play = 1;
-		pos = 1;
+		pos = 0;
 
 		while(play){
 			y_pos = 12 + (2 * pos);
 			mvaddch(y_pos, 30, '>');
 			key = getch();
-			if (key == KEY_RIGHT)
+			if (key == 10)
 				play = 0;
 			else if (key == KEY_UP && pos > 0) {
 				mvaddch(y_pos, 30, ' ');
@@ -306,4 +351,6 @@ void clearScreen(int startX, int startY, int width, int height){
 			}
 		}
 
- }
+		return pos;
+
+ 	}
